@@ -1,15 +1,322 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Edit, Trash2, Plus, Search, Filter, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/useToast";
+
+const initialProducts = [
+  {
+    id: 1,
+    name: "Chronograph Master",
+    price: 1299.99,
+    category: "luxury-watches",
+    stock: 15,
+    status: "In Stock",
+  },
+  {
+    id: 2,
+    name: "Diver Pro 200M",
+    price: 899.99,
+    category: "sports-watches",
+    stock: 12,
+    status: "In Stock",
+  },
+  {
+    id: 3,
+    name: "Classic Automatic",
+    price: 2499.99,
+    category: "automatic",
+    stock: 8,
+    status: "Low Stock",
+  },
+  {
+    id: 4,
+    name: "Elegance Slim",
+    price: 1199.99,
+    category: "dress-watches",
+    stock: 0,
+    status: "Out of Stock",
+  },
+  {
+    id: 5,
+    name: "Sport Chronograph",
+    price: 799.99,
+    category: "chronograph",
+    stock: 23,
+    status: "In Stock",
+  },
+  {
+    id: 6,
+    name: "Precision Quartz",
+    price: 329.99,
+    category: "quartz",
+    stock: 5,
+    status: "Low Stock",
+  },
+  {
+    id: 7,
+    name: "Heritage Automatic",
+    price: 1849.99,
+    category: "automatic",
+    stock: 15,
+    status: "In Stock",
+  },
+  {
+    id: 8,
+    name: "Racing Chronograph",
+    price: 1499.99,
+    category: "chronograph",
+    stock: 0,
+    status: "Out of Stock",
+  },
+];
+
 export default function ProductsPage() {
-    return(
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-            <h1 className="text-4xl font-bold mb-4">Products Page</h1>
-            <p className="text-gray-500 mb-8 max-w-md">
-                Manage your products with our easy-to-use admin dashboard.
-            </p>
-            <Link href="/dashboard/products/new">
-                <Button size="lg">Add New Product</Button>
-            </Link>
+  const { toast } = useToast();
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  useEffect(() => {
+    // Load products from localStorage or use initial data if none exists
+    const storedProducts = localStorage.getItem("adminProducts");
+    if (storedProducts) {
+      setProducts(JSON.parse(storedProducts));
+    } else {
+      setProducts(initialProducts);
+      // Initialize localStorage with mock data
+      localStorage.setItem("adminProducts", JSON.stringify(initialProducts));
+    }
+  }, []);
+
+  // Filter products based on search term
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle product deletion
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      const updatedProducts = products.filter(
+        (p) => p.id !== productToDelete.id
+      );
+      setProducts(updatedProducts);
+      localStorage.setItem("adminProducts", JSON.stringify(updatedProducts));
+
+      // Update category product count
+      const storedCategories = JSON.parse(
+        localStorage.getItem("adminCategories") || "[]"
+      );
+      const updatedCategories = storedCategories.map((category) => {
+        if (category.slug === productToDelete.category) {
+          return {
+            ...category,
+            productCount: Math.max(0, category.productCount - 1),
+          };
+        }
+        return category;
+      });
+      localStorage.setItem(
+        "adminCategories",
+        JSON.stringify(updatedCategories)
+      );
+
+      toast({
+        title: "Success",
+        description: "Watch deleted successfully",
+      });
+
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+        <h1 className="text-3xl font-bold">Watches</h1>
+        <Link href="/dashboard/products/add">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Watch
+          </Button>
+        </Link>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Search watches..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-    )
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Filter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>All Watches</DropdownMenuItem>
+            <DropdownMenuItem>In Stock</DropdownMenuItem>
+            <DropdownMenuItem>Low Stock</DropdownMenuItem>
+            <DropdownMenuItem>Out of Stock</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              Sort
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
+            <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
+            <DropdownMenuItem>Price (Low to High)</DropdownMenuItem>
+            <DropdownMenuItem>Price (High to Low)</DropdownMenuItem>
+            <DropdownMenuItem>Stock (Low to High)</DropdownMenuItem>
+            <DropdownMenuItem>Stock (High to Low)</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="hidden md:table-cell">Category</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead className="hidden md:table-cell">Stock</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProducts.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-gray-500"
+                >
+                  No watches found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {product.category
+                      .split("-")
+                      .map(
+                        (word) => word.charAt(0).toUpperCase() + word.slice(1)
+                      )
+                      .join(" ")}
+                  </TableCell>
+                  <TableCell>${product.price.toFixed(2)}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {product.stock}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        product.status === "In Stock"
+                          ? "bg-green-100 text-green-800 hover:bg-green-100"
+                          : product.status === "Low Stock"
+                          ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+                          : "bg-red-100 text-red-800 hover:bg-red-100"
+                      }
+                    >
+                      {product.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link href={`/dashboard/products/edit/${product.id}`}>
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(product)}
+                      >
+                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {productToDelete?.name}? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

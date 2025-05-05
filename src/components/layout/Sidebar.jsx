@@ -25,7 +25,7 @@ export default function Sidebar() {
     },
     {
       href: "/dashboard/products",
-      label: "Watches",
+      label: "Products",
       icon: Watch,
       active: pathname.includes("/dashboard/products"),
     },
