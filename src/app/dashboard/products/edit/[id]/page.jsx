@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "sonner";
 
 const initialProducts = [
   {
@@ -98,7 +98,6 @@ const initialProducts = [
 ];
 
 export default function ProductsPage() {
-  const { toast } = useToast();
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -114,13 +113,11 @@ export default function ProductsPage() {
     }
   }, []);
 
-  // Filter products based on search term
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   const handleDeleteClick = (product) => {
     setProductToDelete(product);
     setDeleteDialogOpen(true);
@@ -151,10 +148,7 @@ export default function ProductsPage() {
         JSON.stringify(updatedCategories)
       );
 
-      toast({
-        title: "Success",
-        description: "Watch deleted successfully",
-      });
+      toast.success("Watch deleted successfully");
 
       setDeleteDialogOpen(false);
       setProductToDelete(null);
