@@ -4,7 +4,7 @@ export default function Header() {
       <div className="relative z-10 flex-shrink-0 h-16 bg-white border-b border-gray-200 shadow-sm flex">
         <div className="flex-1 flex justify-between px-4 md:px-0">
           <div className="flex-1 flex items-center ml-11 md:ml-6">
-            <h1 className="text-2xl font-bold text-gray-900 md:hidden">
+            <h1 className="text-xl font-bold text-gray-900 md:hidden">
               Admin Dashboard
             </h1>
           </div>

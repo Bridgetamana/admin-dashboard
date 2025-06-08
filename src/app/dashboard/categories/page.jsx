@@ -16,21 +16,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useCategories, useProducts } from "@/hooks/useDataStorage";
 
-const initialCategories = [
-  { id: 1, name: "Luxury Watches", slug: "luxury-watches", productCount: 3 },
-  { id: 2, name: "Sports Watches", slug: "sports-watches", productCount: 2 },
-  { id: 3, name: "Dress Watches", slug: "dress-watches", productCount: 1 },
-  { id: 4, name: "Dive Watches", slug: "dive-watches", productCount: 0 },
-  { id: 5, name: "Chronograph", slug: "chronograph", productCount: 2 },
-  { id: 6, name: "Automatic", slug: "automatic", productCount: 3 },
-  { id: 7, name: "Quartz", slug: "quartz", productCount: 1 },
-  { id: 8, name: "Smartwatches", slug: "smartwatches", productCount: 0 },
-  { id: 9, name: "Vintage", slug: "vintage", productCount: 0 },
-];
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState([]);
+  const { data: categories, loading: categoriesLoading, addItem: addCategory, updateItem: updateCategory, deleteItem: deleteCategory } = useCategories();
+  const { data: products } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -41,17 +32,19 @@ export default function CategoriesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedCategories = localStorage.getItem("adminCategories");
-    if (storedCategories) {
-      setCategories(JSON.parse(storedCategories));
-    } else {
-      setCategories(initialCategories);
-      localStorage.setItem(
-        "adminCategories",
-        JSON.stringify(initialCategories)
-      );
+    if (categories.length > 0 && products.length >= 0) {
+      categories.forEach(category => {
+        const count = products.filter(
+          (product) =>
+            product.category.toLowerCase() === category.slug.toLowerCase()
+        ).length;
+
+        if (category.productCount !== count) {
+          updateCategory(category.id, { productCount: count });
+        }
+      });
     }
-  }, []);
+  }, [products, categories, updateCategory]);
 
   const filteredCategories = categories.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,8 +56,7 @@ export default function CategoriesPage() {
       .replace(/[^\w\s]/gi, "")
       .replace(/\s+/gi, "-");
   };
-
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     setIsSubmitting(true);
 
     if (!newCategory.name) {
@@ -86,18 +78,18 @@ export default function CategoriesPage() {
       productCount: 0,
     };
 
-    const updatedCategories = [...categories, newCategoryWithId];
-    setCategories(updatedCategories);
-    localStorage.setItem("adminCategories", JSON.stringify(updatedCategories));
-
-    toast.success("Category added successfully");
-
-    setNewCategory({ name: "", slug: "" });
-    setIsAddDialogOpen(false);
+    const success = await addCategory(newCategoryWithId);
+    
+    if (success) {
+      toast.success("Category added successfully");
+      setNewCategory({ name: "", slug: "" });
+      setIsAddDialogOpen(false);
+    } else {
+      toast.error("Failed to add category");
+    }
+    
     setIsSubmitting(false);
-  };
-
-  const handleEditCategory = () => {
+  };  const handleEditCategory = async () => {
     setIsSubmitting(true);
 
     if (!categoryToEdit.name) {
@@ -117,22 +109,22 @@ export default function CategoriesPage() {
       return;
     }
 
-    const updatedCategories = categories.map((category) =>
-      category.id === categoryToEdit.id
-        ? { ...category, name: categoryToEdit.name, slug: slug }
-        : category
-    );
+    const success = await updateCategory(categoryToEdit.id, {
+      name: categoryToEdit.name,
+      slug: slug
+    });
 
-    setCategories(updatedCategories);
-    localStorage.setItem("adminCategories", JSON.stringify(updatedCategories));
-
-    toast.success("Category updated successfully");
-
-    setIsEditDialogOpen(false);
+    if (success) {
+      toast.success("Category updated successfully");
+      setIsEditDialogOpen(false);
+      setCategoryToEdit(null);
+    } else {
+      toast.error("Failed to update category");
+    }
+    
     setIsSubmitting(false);
   };
-
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     setIsSubmitting(true);
     if (categoryToDelete.productCount > 0) {
       toast.error(
@@ -142,45 +134,18 @@ export default function CategoriesPage() {
       return;
     }
 
-    const updatedCategories = categories.filter(
-      (category) => category.id !== categoryToDelete.id
-    );
-    setCategories(updatedCategories);
-    localStorage.setItem("adminCategories", JSON.stringify(updatedCategories));
-
-    toast.success("Category deleted successfully");
-
-    setIsDeleteDialogOpen(false);
-    setCategoryToDelete(null);
+    const success = await deleteCategory(categoryToDelete.id);
+    
+    if (success) {
+      toast.success("Category deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    } else {
+      toast.error("Failed to delete category");
+    }
+    
     setIsSubmitting(false);
   };
-
-  // Update product counts
-  useEffect(() => {
-    const updateProductCounts = () => {
-      const products = JSON.parse(
-        localStorage.getItem("adminProducts") || "[]"
-      );
-
-      const updatedCategories = categories.map((category) => {
-        const count = products.filter(
-          (product) =>
-            product.category.toLowerCase() === category.slug.toLowerCase()
-        ).length;
-
-        return { ...category, productCount: count };
-      });
-
-      setCategories(updatedCategories);
-      localStorage.setItem(
-        "adminCategories",
-        JSON.stringify(updatedCategories)
-      );
-    };
-
-    updateProductCounts();
-  }, []);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
@@ -201,10 +166,14 @@ export default function CategoriesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCategories.length === 0 ? (
+      </div>      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {categoriesLoading ? (
+          <Card className="col-span-full">
+            <CardContent className="flex items-center justify-center h-32">
+              <p className="text-gray-500">Loading categories...</p>
+            </CardContent>
+          </Card>
+        ) : filteredCategories.length === 0 ? (
           <Card className="col-span-full">
             <CardContent className="flex items-center justify-center h-32">
               <p className="text-gray-500">No categories found</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Filter, ArrowUpDown, Eye, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,103 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-
-const initialCustomers = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john.smith@example.com",
-    phone: "+1 (555) 123-4567",
-    orders: 5,
-    totalSpent: 1249.95,
-    status: "Active",
-    lastPurchase: "2023-04-15",
-  },
-  {
-    id: 2,
-    name: "Emma Johnson",
-    email: "emma.johnson@example.com",
-    phone: "+1 (555) 234-5678",
-    orders: 3,
-    totalSpent: 789.97,
-    status: "Active",
-    lastPurchase: "2023-05-02",
-  },
-  {
-    id: 3,
-    name: "Michael Brown",
-    email: "michael.brown@example.com",
-    phone: "+1 (555) 345-6789",
-    orders: 1,
-    totalSpent: 299.99,
-    status: "New",
-    lastPurchase: "2023-05-10",
-  },
-  {
-    id: 4,
-    name: "Olivia Davis",
-    email: "olivia.davis@example.com",
-    phone: "+1 (555) 456-7890",
-    orders: 8,
-    totalSpent: 2399.92,
-    status: "VIP",
-    lastPurchase: "2023-05-08",
-  },
-  {
-    id: 5,
-    name: "William Wilson",
-    email: "william.wilson@example.com",
-    phone: "+1 (555) 567-8901",
-    orders: 0,
-    totalSpent: 0,
-    status: "Inactive",
-    lastPurchase: null,
-  },
-  {
-    id: 6,
-    name: "Sophia Martinez",
-    email: "sophia.martinez@example.com",
-    phone: "+1 (555) 678-9012",
-    orders: 2,
-    totalSpent: 599.98,
-    status: "Active",
-    lastPurchase: "2023-04-28",
-  },
-  {
-    id: 7,
-    name: "James Anderson",
-    email: "james.anderson@example.com",
-    phone: "+1 (555) 789-0123",
-    orders: 4,
-    totalSpent: 1099.96,
-    status: "Active",
-    lastPurchase: "2023-05-05",
-  },
-  {
-    id: 8,
-    name: "Charlotte Thomas",
-    email: "charlotte.thomas@example.com",
-    phone: "+1 (555) 890-1234",
-    orders: 6,
-    totalSpent: 1799.94,
-    status: "VIP",
-    lastPurchase: "2023-05-12",
-  },
-];
+import { useCustomers } from "@/hooks/useDataStorage";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState([]);
+  const { data: customers, loading: customersLoading } = useCustomers();
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const storedCustomers = localStorage.getItem("adminCustomers");
-    if (storedCustomers) {
-      setCustomers(JSON.parse(storedCustomers));
-    } else {
-      setCustomers(initialCustomers);
-      localStorage.setItem("adminCustomers", JSON.stringify(initialCustomers));
-    }
-  }, []);
 
   const filteredCustomers = customers.filter(
     (customer) =>
@@ -195,9 +103,18 @@ export default function CustomersPage() {
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          </TableHeader>
+          </TableHeader>{" "}
           <TableBody>
-            {filteredCustomers.length === 0 ? (
+            {customersLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-gray-500"
+                >
+                  Loading customers...
+                </TableCell>
+              </TableRow>
+            ) : filteredCustomers.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}

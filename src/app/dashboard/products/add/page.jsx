@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useCategories, useProducts } from "@/hooks/useDataStorage";
 
 export default function AddProductPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [productData, setProductData] = useState({
+  const { data: categories, updateItem: updateCategory } = useCategories();  const [productData, setProductData] = useState({
     name: "",
     price: "",
     category: "",
@@ -31,13 +31,6 @@ export default function AddProductPage() {
   });
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
-  useEffect(() => {
-    const storedCategories = JSON.parse(
-      localStorage.getItem("adminCategories") || "[]"
-    );
-    setCategories(storedCategories);
-  }, []);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -65,10 +58,10 @@ export default function AddProductPage() {
       reader.readAsDataURL(file);
     }
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     if (
       !productData.name ||
       !productData.price ||
@@ -96,21 +89,19 @@ export default function AddProductPage() {
       description: productData.description,
       image: imagePreview || "/placeholder.svg",
     };
-    const existingProducts = JSON.parse(
-      localStorage.getItem("adminProducts") || "[]"
-    );
-    const updatedProducts = [...existingProducts, newProduct];
-    localStorage.setItem("adminProducts", JSON.stringify(updatedProducts));
-    const storedCategories = JSON.parse(
-      localStorage.getItem("adminCategories") || "[]"
-    );
-    const updatedCategories = storedCategories.map((category) => {
-      if (category.slug === productData.category) {
-        return { ...category, productCount: category.productCount + 1 };
-      }
-      return category;
-    });
-    localStorage.setItem("adminCategories", JSON.stringify(updatedCategories));
+    const productSuccess = await addProduct(newProduct);
+    
+    if (!productSuccess) {
+      toast.error("Failed to add watch");
+      setIsSubmitting(false);
+      return;
+    }
+    const categoryToUpdate = categories.find(cat => cat.slug === productData.category);
+    if (categoryToUpdate) {
+      await updateCategory(categoryToUpdate.id, {
+        productCount: categoryToUpdate.productCount + 1
+      });
+    }
 
     toast.success("Watch added successfully");
 

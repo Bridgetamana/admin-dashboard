@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Edit, Trash2, Plus, Search, Filter, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,92 +29,19 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
-
-const initialProducts = [
-  {
-    id: 1,
-    name: "Chronograph Master",
-    price: 1299.99,
-    category: "luxury-watches",
-    stock: 15,
-    status: "In Stock",
-  },
-  {
-    id: 2,
-    name: "Diver Pro 200M",
-    price: 899.99,
-    category: "sports-watches",
-    stock: 12,
-    status: "In Stock",
-  },
-  {
-    id: 3,
-    name: "Classic Automatic",
-    price: 2499.99,
-    category: "automatic",
-    stock: 8,
-    status: "Low Stock",
-  },
-  {
-    id: 4,
-    name: "Elegance Slim",
-    price: 1199.99,
-    category: "dress-watches",
-    stock: 0,
-    status: "Out of Stock",
-  },
-  {
-    id: 5,
-    name: "Sport Chronograph",
-    price: 799.99,
-    category: "chronograph",
-    stock: 23,
-    status: "In Stock",
-  },
-  {
-    id: 6,
-    name: "Precision Quartz",
-    price: 329.99,
-    category: "quartz",
-    stock: 5,
-    status: "Low Stock",
-  },
-  {
-    id: 7,
-    name: "Heritage Automatic",
-    price: 1849.99,
-    category: "automatic",
-    stock: 15,
-    status: "In Stock",
-  },
-  {
-    id: 8,
-    name: "Racing Chronograph",
-    price: 1499.99,
-    category: "chronograph",
-    stock: 0,
-    status: "Out of Stock",
-  },
-];
+import { useProducts, useCategories } from "@/hooks/useDataStorage";
 
 export default function ProductsPage() {
   const { toast } = useToast();
-  const [products, setProducts] = useState([]);
+  const {
+    data: products,
+    loading: productsLoading,
+    deleteItem: deleteProduct,
+  } = useProducts();
+  const { data: categories, updateItem: updateCategory } = useCategories();
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
-
-  useEffect(() => {
-    const storedProducts = localStorage.getItem("adminProducts");
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
-    } else {
-      setProducts(initialProducts);
-      localStorage.setItem("adminProducts", JSON.stringify(initialProducts));
-    }
-  }, []);
-
-  // Filter products based on search term
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,39 +52,34 @@ export default function ProductsPage() {
     setProductToDelete(product);
     setDeleteDialogOpen(true);
   };
-
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      const updatedProducts = products.filter(
-        (p) => p.id !== productToDelete.id
-      );
-      setProducts(updatedProducts);
-      localStorage.setItem("adminProducts", JSON.stringify(updatedProducts));
+      const success = await deleteProduct(productToDelete.id);
 
-      const storedCategories = JSON.parse(
-        localStorage.getItem("adminCategories") || "[]"
-      );
-      const updatedCategories = storedCategories.map((category) => {
-        if (category.slug === productToDelete.category) {
-          return {
-            ...category,
+      if (success) {
+        const category = categories.find(
+          (cat) => cat.slug === productToDelete.category
+        );
+        if (category) {
+          await updateCategory(category.id, {
             productCount: Math.max(0, category.productCount - 1),
-          };
+          });
         }
-        return category;
-      });
-      localStorage.setItem(
-        "adminCategories",
-        JSON.stringify(updatedCategories)
-      );
 
-      toast({
-        title: "Success",
-        description: "Watch deleted successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Watch deleted successfully",
+        });
 
-      setDeleteDialogOpen(false);
-      setProductToDelete(null);
+        setDeleteDialogOpen(false);
+        setProductToDelete(null);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete watch",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -226,9 +148,18 @@ export default function ProductsPage() {
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          </TableHeader>
+          </TableHeader>{" "}
           <TableBody>
-            {filteredProducts.length === 0 ? (
+            {productsLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-gray-500"
+                >
+                  Loading watches...
+                </TableCell>
+              </TableRow>
+            ) : filteredProducts.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
