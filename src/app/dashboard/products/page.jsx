@@ -223,18 +223,20 @@ export default function ProductsPage() {
                   <TableCell>${product.price.toFixed(2)}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {product.stock}
-                  </TableCell>
+                  </TableCell>{" "}
                   <TableCell>
                     <Badge
                       className={
-                        product.status === "In Stock"
+                        product.status === "Active"
                           ? "bg-green-100 text-green-800 hover:bg-green-100"
                           : product.status === "Low Stock"
                           ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
                           : "bg-red-100 text-red-800 hover:bg-red-100"
                       }
                     >
-                      {product.status}
+                      {product.status === "Active"
+                        ? "In Stock"
+                        : product.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
