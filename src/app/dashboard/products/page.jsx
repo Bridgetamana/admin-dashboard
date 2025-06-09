@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Edit, Trash2, Plus, Search, Filter, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableRowSkeleton } from "@/components/ui/loading-skeletons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +96,6 @@ export default function ProductsPage() {
           </Button>
         </Link>
       </div>
-
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
@@ -135,31 +136,41 @@ export default function ProductsPage() {
             <DropdownMenuItem>Stock (High to Low)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="hidden md:table-cell">Category</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead className="hidden md:table-cell">Stock</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>{" "}
-          <TableBody>
-            {productsLoading ? (
+      </div>{" "}
+      {productsLoading ? (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-8 text-gray-500"
-                >
-                  Loading watches...
-                </TableCell>
+                <TableHead>Product</TableHead>
+                <TableHead className="hidden md:table-cell">Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead className="hidden md:table-cell">Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : filteredProducts.length === 0 ? (
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <TableRowSkeleton key={index} columns={6} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="hidden md:table-cell">Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead className="hidden md:table-cell">Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -168,10 +179,39 @@ export default function ProductsPage() {
                   No watches found
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredProducts.map((product) => (
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="hidden md:table-cell">Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead className="hidden md:table-cell">Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-10 h-10 rounded-md overflow-hidden bg-gray-100">
+                        <Image
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
+                      {product.name}
+                    </div>
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">
                     {product.category
                       .split("-")
@@ -216,12 +256,11 @@ export default function ProductsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
